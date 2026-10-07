@@ -42,6 +42,11 @@ would still be ~3–6× cheaper than SaaS there.
 ¹ Low confidence: Lindy bills workspace users separately and 21 always-on agents would likely need a larger credit tier.
 ² Railway rates (~$10 per GB RAM per month) × the 18.2 GiB this stack actually uses + $20 plan; CPU excluded, so this is a floor.
 
+## Evidence
+
+EVIDENCE: each price was read from the linked pricing page on 2026-10-07. RAM figures come from `docker stats` on the live host the same day.
+Low-confidence rows (Lindy; anything sourced from a third party) are marked ¹ or named in the table.
+
 ## What this comparison leaves out
 
 - **LLM tokens** — identical on both sides (the gateway routes to the same providers).

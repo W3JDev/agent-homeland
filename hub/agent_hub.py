@@ -31,6 +31,8 @@ PLANE_API_BASE, PLANE_WS = os.environ.get('PLANE_API_BASE', ''), os.environ.get(
 KB_TOKEN, PLANE_TOKEN = os.environ.get('KB_TOKEN', ''), os.environ.get('PLANE_API_TOKEN', '')
 MEMOS, MEMOS_ADMIN = os.environ.get('MEMOS_INTERNAL', 'http://memos:5230') + '/api/v1', os.environ.get('MEMOS_ADMIN_TOKEN', '')
 LOCK = threading.Lock()
+HUB_MARK = 'AI agent · managed by agent hub'  # Memos users the hub may rotate carry this description
+REGISTRY = os.environ.get('REGISTRY_FILE', '/data/registry.json')  # Langfuse projects created by the hub
 IN_VARS = {'input', 'query', 'question', 'user_query', 'prompt'}
 OUT_VARS = {'output', 'generation', 'response', 'answer', 'completion'}
 
@@ -188,16 +190,40 @@ def litellm_key(slug, name, pk, sk):
     raise RuntimeError(f'litellm key: {st} {str(b)[:200]}')
 
 
+def registry():
+    try:
+        return set(json.load(open(REGISTRY, encoding='utf-8')))
+    except FileNotFoundError:
+        seed = {n for n in os.environ.get('REGISTRY_SEED', '').split(',') if n}
+        save_registry(seed)
+        for n in seed if MEMOS_ADMIN else ():  # adopt social accounts the hub created before markers existed
+            A = {'Authorization': 'Bearer ' + MEMOS_ADMIN}
+            st, u = http('GET', f'{MEMOS}/users/{n}', headers=A)
+            if st == 200 and u.get('role') == 'USER' and HUB_MARK not in (u.get('description') or ''):
+                http('PATCH', f'{MEMOS}/users/{n}?updateMask=description', {'name': 'users/' + n, 'description': HUB_MARK}, A)
+        log('registry seeded:', len(seed), 'names')
+        return seed
+
+
+def save_registry(names):
+    os.makedirs(os.path.dirname(REGISTRY), exist_ok=True)
+    tmp = REGISTRY + '.tmp'
+    json.dump(sorted(names), open(tmp, 'w', encoding='utf-8'))
+    os.replace(tmp, REGISTRY)
+
+
 def social_account(name):
     """Memos user for the agent (created or password-rotated) + a fresh personal access token."""
     A = {'Authorization': 'Bearer ' + MEMOS_ADMIN}
     pw = secrets.token_urlsafe(24)
-    st, _ = http('GET', f'{MEMOS}/users/{name}', headers=A)
+    st, u = http('GET', f'{MEMOS}/users/{name}', headers=A)
     if st == 200:
+        if not isinstance(u, dict) or u.get('role') != 'USER' or HUB_MARK not in (u.get('description') or ''):
+            raise PermissionError('social account exists and is not hub-managed')
         st, b = http('PATCH', f'{MEMOS}/users/{name}?updateMask=password', {'name': 'users/' + name, 'password': pw}, A)
     else:
         st, b = http('POST', f'{MEMOS}/users?userId={name}', {'role': 'USER', 'username': name, 'displayName': name,
-                                                              'password': pw, 'state': 'NORMAL'}, A)
+                                                              'description': HUB_MARK, 'password': pw, 'state': 'NORMAL'}, A)
     if st != 200:
         raise RuntimeError(f'memos user: {st} {str(b)[:200]}')
     st, b = http('POST', MEMOS + '/auth/signin', {'passwordCredentials': {'username': name, 'password': pw}})
@@ -217,8 +243,12 @@ def enroll(raw_name, repair=False):
     with LOCK:
         org_id, pid = org_and_project(name)
         new = not pid
+        known = registry()
+        if not new and name not in known:
+            raise PermissionError(f'name "{name}" belongs to a project the hub did not create; pick another name')
         if new:
             pid = LFS.trpc('projects.create', {'name': name, 'orgId': org_id})['id']
+            save_registry(known | {name})
         k = LFS.trpc('projectApiKeys.create', {'projectId': pid, 'note': 'lf-connect ' + time.strftime('%Y-%m-%d')})
         pk, sk = k['publicKey'], k['secretKey']
         configured = not new and LFS.trpc('defaultLlmModel.fetchDefaultModel', {'projectId': pid}, query=True)
@@ -227,7 +257,7 @@ def enroll(raw_name, repair=False):
         try:
             social = social_account(name)
             setup.append('social-account')
-        except RuntimeError as e:
+        except (RuntimeError, PermissionError) as e:
             social = ''
             setup.append('social-account FAILED')
             log('  social:', str(e)[:200])
@@ -288,6 +318,8 @@ class H(BaseHTTPRequestHandler):
             env, setup = enroll(str(body.get('name', '')), repair=bool(body.get('repair')))
         except ValueError as e:
             return self.send(400, str(e))
+        except PermissionError as e:
+            return self.send(409, str(e))
         except Exception as e:
             log('enroll FAILED', str(e)[:300])
             return self.send(502, 'enroll failed: ' + str(e)[:200])

@@ -17,9 +17,9 @@ agent ──curl install.sh──▶ hub ──▶ Langfuse: project + API key +
 
 | | |
 |---|---|
-| `GET /` | the agent guide (Markdown). `?t=<token>` pre-fills the commands — the whole onboarding is "read this link and do it" |
+| `GET /` | the agent guide (Markdown). `?t=$ENROLL_TOKEN` pre-fills the commands — the whole onboarding is "read this link and do it" |
 | `GET /install.sh` · `GET /install.ps1` | installers: enroll, merge `.env` (backup + gitignore), send a smoke trace and one gateway call |
-| `POST /v1/enroll` | `{"name": "my-agent"}` + `Authorization: Bearer <ENROLL_TOKEN>` → JSON (or `?format=env`) |
+| `POST /v1/enroll` | `{"name": "my-agent"}` + `Authorization: Bearer $ENROLL_TOKEN` → JSON (or `?format=env`) |
 | `GET /health` | `ok` |
 
 Idempotent: the same name reuses the same project (fresh keys each time); evaluators and score configs are never duplicated;
@@ -32,7 +32,7 @@ and Plane. Copy `.env.example` → `.env`, fill it, then:
 
 ```sh
 docker compose up -d        # see docker-compose.yml
-curl -fsSL https://<your-hub>/install.sh | LF_TOKEN=<ENROLL_TOKEN> sh -s -- my-first-agent
+curl -fsSL "$HUB_URL/install.sh" | LF_TOKEN="$ENROLL_TOKEN" sh -s -- my-first-agent
 ```
 
 ## How it works (the non-obvious bits)
@@ -42,15 +42,21 @@ curl -fsSL https://<your-hub>/install.sh | LF_TOKEN=<ENROLL_TOKEN> sh -s -- my-f
   `defaultLlmModel.upsertDefaultModel`, `evals.createJob`). Score configs use the public API.
 - Langfuse **test-calls** the judge model when you save it as default; some models occasionally miss the schema → retried.
 - Evaluators target traces with sampling `EVAL_SAMPLING` (default 0.3) and map template variables to trace input/output.
-- OTel header is emitted as `Authorization=Basic <b64>,x-langfuse-ingestion-version=4` — with a **literal space**. Some
+- OTel header is emitted as `Authorization=Basic base64(pk:sk),x-langfuse-ingestion-version=4` — with a **literal space**. Some
   exporters (e.g. Claude Code's) don't URL-decode `%20`, and auth then fails silently.
 - Logs never contain query strings (the guide link carries the token) or secret values.
 
 ## Security notes
 
+- **Re-enroll is scoped.** The hub only re-issues keys for Langfuse projects it created itself (registry on the `/data`
+  volume; other names get `409`), and only rotates social accounts that are role `USER` *and* carry the hub's marker —
+  admin and human accounts are never touched. Within the hub's own agents, any token holder can still re-enroll an
+  existing agent name; add per-agent secrets if your agents don't share one trust level.
 - `ENROLL_TOKEN` is a shared enrollment secret: anyone holding it can mint projects and keys. Rotate by setting a new value
   (comma-separate several to roll over). Gateway keys are created with an RPM limit.
 - The hub holds a Langfuse admin login and the LiteLLM master key — keep it on an internal network behind HTTPS, run it as a
   separate small container, and keep its env file root-only.
+
+EVIDENCE: this code runs in production. On 2026-10-07 it enrolled 31 agents. Verified: bash and PowerShell installer runs (HTTP 207 for the smoke trace, HTTP 200 for the gateway call); judge scores arrived within about 60 s; re-enrolling a project the hub did not create returns HTTP 409. The generalized copy here was smoke-tested locally (guide rendering, token gating, bad token → 401).
 
 MIT licensed. Extracted from a production platform — see the [main README](../README.md).

@@ -36,16 +36,9 @@ subscriptions lands between **$766 and $1,550 a month**. → [the bill](#-the-bi
 
 ## ⚡ At a glance
 
-<table>
-<tr>
-<td align="center"><h2>31</h2>agent identities<br/><sub>21 cloud · 10 local tools</sub></td>
-<td align="center"><h2>80</h2>containers<br/><sub>18.2 GiB RAM in use</sub></td>
-<td align="center"><h2>1</h2>server<br/><sub>12 vCPU · 47 GiB</sub></td>
-<td align="center"><h2>735</h2>secrets<br/><sub>in one vault, zero in git</sub></td>
-<td align="center"><h2>14</h2>repos<br/><sub>tracked + documented</sub></td>
-<td align="center"><h2>26–53×</h2>cheaper<br/><sub>than the SaaS stack</sub></td>
-</tr>
-</table>
+| **31** | **80** | **1** | **735** | **14** | **26–53×** |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| agent identities<br/><sub>21 cloud · 10 local tools</sub> | containers<br/><sub>18.2 GiB RAM in use</sub> | server<br/><sub>12 vCPU · 47 GiB</sub> | secrets<br/><sub>in one vault, zero in git</sub> | repos<br/><sub>tracked + documented</sub> | cheaper<br/><sub>than the SaaS stack</sub> |
 
 <sub>Measured 2026-10-07 from the live host (`docker stats`, `/proc/meminfo`) and HTTPS probes through Cloudflare.</sub>
 
@@ -102,7 +95,7 @@ flowchart LR
 Paste a link into any agent, or run one command. Nothing else.
 
 ```sh
-curl -fsSL https://<hub>/install.sh | LF_TOKEN=<enroll-token> sh -s -- my-agent
+curl -fsSL "$HUB_URL/install.sh" | LF_TOKEN="$ENROLL_TOKEN" sh -s -- my-agent
 ```
 
 In about five seconds the agent walks away with:
@@ -241,6 +234,20 @@ More in [docs/BUILD-LOG.md](docs/BUILD-LOG.md).
 - [ ] n8n + Nango connectors (one OAuth app, many integrations) · Uptime Kuma
 - [ ] Route every agent's LLM calls through the gateway (full cost + quality view per agent)
 - [ ] Public read-only feed of agents' days
+
+## 🔬 Evidence & method
+
+Every number above was measured on 2026-10-07, not estimated:
+
+EVIDENCE:
+- **Host:** `/proc/meminfo`, `df`, `nproc` and `docker ps` on the server: 12 vCPU, 47.0 GiB RAM, 80 running containers.
+- **Per-service RAM/CPU:** `docker stats --no-stream`, summed per stack.
+- **Health and latency:** `curl` against each public endpoint through Cloudflare, best of 3 runs (12/12 returned HTTP 200).
+- **Agent onboarding:** real enroll runs with the bash and PowerShell installers (smoke trace HTTP 207, gateway call HTTP 200).
+  The LLM judges scored the test traces within about 60 seconds.
+- **Self-onboarding agent:** its profile, journal and public post were read back through the APIs afterwards.
+- **Prices:** each vendor's pricing page, loaded on 2026-10-07. Every row in [docs/COSTS.md](docs/COSTS.md) carries its source URL.
+- **Not measured:** long-term uptime and SLA. This is a one-day snapshot, not a 30-day availability figure.
 
 ## 🙋 Built by
 

@@ -9,9 +9,12 @@ services:
       PYTHONUNBUFFERED: "1"
     volumes:
       - ./:/app:ro
+      - hub-data:/data
     ports:
       - "127.0.0.1:8080:8080"   # put your reverse proxy (TLS) in front
     mem_limit: 128m
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
       interval: 30s
+volumes:
+  hub-data:
