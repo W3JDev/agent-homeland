@@ -1,0 +1,17 @@
+services:
+  hub:
+    image: python:3.12-alpine
+    restart: unless-stopped
+    working_dir: /app
+    command: ["python", "agent_hub.py"]
+    env_file: [.env]
+    environment:
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./:/app:ro
+    ports:
+      - "127.0.0.1:8080:8080"   # put your reverse proxy (TLS) in front
+    mem_limit: 128m
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 30s

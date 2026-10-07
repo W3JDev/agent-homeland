@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="300" viewBox="0 0 1280 300" role="img" aria-label="Monthly cost comparison: self-hosted about 29 dollars, SaaS cheapest 766 dollars, SaaS typical 1550 dollars">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#070A13"/><stop offset="1" stop-color="#121A2F"/></linearGradient>
+    <linearGradient id="me" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#22D3EE"/><stop offset="1" stop-color="#818CF8"/></linearGradient>
+    <linearGradient id="saas" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#334155"/><stop offset="1" stop-color="#475569"/></linearGradient>
+    <style>.t{font-family:ui-sans-serif,-apple-system,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif}.m{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+      .grow{transform-origin:300px 0;animation:g 1.4s cubic-bezier(.2,.8,.2,1) both}@keyframes g{from{transform:scaleX(0)}to{transform:scaleX(1)}}</style>
+  </defs>
+  <rect width="1280" height="300" rx="18" fill="url(#bg)"/>
+  <text x="48" y="52" class="m" font-size="15" fill="#94A3B8" letter-spacing="3">MONTHLY COST · SAME CAPABILITIES · USD</text>
+
+  <text x="48" y="112" class="t" font-size="20" font-weight="700" fill="#E2E8F0">Agent Homeland</text>
+  <text x="48" y="134" class="t" font-size="14" fill="#64748B">1 VPS, open source</text>
+  <rect class="grow" x="300" y="94" width="18" height="40" rx="6" fill="url(#me)"/>
+  <text x="332" y="122" class="t" font-size="24" font-weight="800" fill="#67E8F9">≈ $29</text>
+
+  <text x="48" y="182" class="t" font-size="20" font-weight="700" fill="#CBD5E1">SaaS — cheapest plans</text>
+  <text x="48" y="204" class="t" font-size="14" fill="#64748B">17 services, 3 seats</text>
+  <rect class="grow" x="300" y="164" width="474" height="40" rx="6" fill="url(#saas)"/>
+  <text x="790" y="192" class="t" font-size="24" font-weight="800" fill="#CBD5E1">$766</text>
+
+  <text x="48" y="252" class="t" font-size="20" font-weight="700" fill="#CBD5E1">SaaS — typical plans</text>
+  <text x="48" y="274" class="t" font-size="14" fill="#64748B">17 services, 3 seats</text>
+  <rect class="grow" x="300" y="234" width="900" height="40" rx="6" fill="url(#saas)"/>
+  <text x="1188" y="262" text-anchor="end" class="t" font-size="24" font-weight="800" fill="#F1F5F9">$1,550</text>
+
+  <text x="1232" y="52" text-anchor="end" class="t" font-size="16" font-weight="700" fill="#F5D0FE">26–53× cheaper</text>
+</svg>
